@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PhotoSharingApp.Api/PhotoSharingApp.Api.csproj" />
+    <Project Path="src/PhotoSharingApp.AppHost/PhotoSharingApp.AppHost.csproj" />
+    <Project Path="src/PhotoSharingApp.Processing/PhotoSharingApp.Processing.csproj" />
+    <Project Path="src/PhotoSharingApp.ServiceDefaults/PhotoSharingApp.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PhotoSharingApp.Tests.Unit/PhotoSharingApp.Tests.Unit.csproj" />
+  </Folder>
+  <Folder Name="/infra/">
+    <Project Path="infra/PhotoSharingApp.Infra.csproj" />
+  </Folder>
+</Solution>

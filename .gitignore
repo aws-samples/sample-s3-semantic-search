@@ -1,0 +1,39 @@
+# .NET build output
+bin/
+obj/
+*.user
+*.suo
+
+# Kiro
+.kiro/
+
+# CDK
+infra/cdk.out/
+cdk.context.json
+
+# Lambda publish artifacts
+**/publish/
+*.zip
+
+# Kiro
+.kiro/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (if any tooling is added)
+node_modules/
+
+# Logs
+*.log
+
+# Frontend (npm + dynamic config)
+frontend/node_modules/
+frontend/env-config.js

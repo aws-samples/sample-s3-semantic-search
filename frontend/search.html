@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapFind - Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-50 flex flex-col">
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200" aria-label="Main navigation">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="upload.html" class="text-xl font-bold text-indigo-600">SnapFind</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="upload.html" class="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">
+                        Upload
+                    </a>
+                    <a href="search.html" class="px-3 py-2 rounded-md text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200" aria-current="page">
+                        Search
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Search Bar -->
+        <section aria-label="Photo search">
+            <!-- Search mode toggle -->
+            <div class="max-w-2xl mx-auto mb-4 flex justify-center gap-2">
+                <button id="mode-text" type="button" class="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white">Text Search</button>
+                <button id="mode-image" type="button" class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300">Image Search</button>
+            </div>
+
+            <!-- Text search form -->
+            <form id="search-form" class="max-w-2xl mx-auto mb-8" role="search">
+                <label for="search-input" class="sr-only">Search photos</label>
+                <div class="flex gap-2">
+                    <input
+                        type="text"
+                        id="search-input"
+                        name="q"
+                        placeholder="Search photos by description (e.g., sunset on the beach)"
+                        class="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
+                        autocomplete="off"
+                    >
+                    <button
+                        type="submit"
+                        id="search-button"
+                        class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm"
+                    >
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        Search
+                    </button>
+                </div>
+            </form>
+
+            <!-- Image search form (hidden by default) -->
+            <form id="image-search-form" class="max-w-2xl mx-auto mb-8 hidden" role="search">
+                <label for="image-search-input" class="block text-sm font-medium text-gray-700 mb-2">Upload a reference image to find similar photos</label>
+                <div class="flex gap-2 items-center">
+                    <input
+                        type="file"
+                        id="image-search-input"
+                        accept="image/jpeg,image/png,image/webp"
+                        class="flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                    >
+                    <button
+                        type="submit"
+                        id="image-search-button"
+                        disabled
+                        class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        Find Similar
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Error Message Area -->
+        <div id="error-message" class="hidden max-w-2xl mx-auto mb-6" role="alert" aria-live="polite">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
+                <svg class="w-5 h-5 text-red-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p id="error-text" class="text-sm text-red-700"></p>
+            </div>
+        </div>
+
+        <!-- No Results Message Area -->
+        <div id="no-results-message" class="hidden max-w-2xl mx-auto mb-6 text-center py-12" role="status" aria-live="polite">
+            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <p class="text-gray-600 text-lg font-medium">No results found</p>
+            <p class="text-gray-500 text-sm mt-1">Try a different search term to find photos.</p>
+        </div>
+
+        <!-- Results Grid -->
+        <section id="results-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" aria-label="Search results">
+            <!-- Photo thumbnails will be populated by JavaScript -->
+        </section>
+    </main>
+
+    <!-- Photo Overlay -->
+    <div id="photo-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Photo viewer">
+        <!-- Semi-transparent background -->
+        <div id="overlay-backdrop" class="absolute inset-0 bg-black bg-opacity-75"></div>
+
+        <!-- Overlay Content -->
+        <div class="relative z-10 max-w-4xl w-full mx-4 bg-white rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <!-- Close Button -->
+            <div class="flex justify-end p-3 border-b border-gray-200">
+                <button
+                    id="overlay-close-button"
+                    type="button"
+                    class="inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                    aria-label="Close photo viewer"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Full-size Photo -->
+            <div class="flex-1 overflow-auto p-4 flex items-center justify-center bg-gray-100">
+                <img
+                    id="overlay-photo"
+                    src=""
+                    alt="Full-size photo"
+                    class="max-w-full max-h-[60vh] object-contain rounded"
+                >
+            </div>
+
+            <!-- Metadata Display -->
+            <div id="overlay-metadata" class="border-t border-gray-200 bg-gray-50 p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">Photo Details</h3>
+                <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <div>
+                        <dt class="text-gray-500">Filename</dt>
+                        <dd id="overlay-filename" class="text-gray-900 font-medium truncate"></dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-500">Upload Date</dt>
+                        <dd id="overlay-upload-date" class="text-gray-900 font-medium"></dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-500">File Size</dt>
+                        <dd id="overlay-file-size" class="text-gray-900 font-medium"></dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-500">Content Type</dt>
+                        <dd id="overlay-content-type" class="text-gray-900 font-medium"></dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <script src="env-config.js"></script>
+    <script src="config.js"></script>
+    <script>
+    (function () {
+        'use strict';
+
+        // Configuration
+        const API_BASE_URL = window.APP_CONFIG?.apiBaseUrl || '';
+
+        // DOM Elements
+        const searchForm = document.getElementById('search-form');
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const noResultsMessage = document.getElementById('no-results-message');
+        const resultsGrid = document.getElementById('results-grid');
+        const photoOverlay = document.getElementById('photo-overlay');
+        const overlayBackdrop = document.getElementById('overlay-backdrop');
+        const overlayCloseButton = document.getElementById('overlay-close-button');
+        const overlayPhoto = document.getElementById('overlay-photo');
+        const overlayFilename = document.getElementById('overlay-filename');
+        const overlayUploadDate = document.getElementById('overlay-upload-date');
+        const overlayFileSize = document.getElementById('overlay-file-size');
+        const overlayContentType = document.getElementById('overlay-content-type');
+
+        // State
+        let currentResults = [];
+
+        // Utility functions
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function formatDate(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // UI helpers
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+            noResultsMessage.classList.add('hidden');
+        }
+
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+
+        function showNoResults() {
+            noResultsMessage.classList.remove('hidden');
+            resultsGrid.innerHTML = '';
+        }
+
+        function hideNoResults() {
+            noResultsMessage.classList.add('hidden');
+        }
+
+        function setLoading(isLoading, target) {
+            var btn = target || searchButton;
+            btn.disabled = isLoading;
+            if (isLoading) {
+                btn.innerHTML = `
+                    <svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    Searching...
+                `;
+            } else {
+                var isImageBtn = (btn === document.getElementById('image-search-button'));
+                btn.innerHTML = `
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    ${isImageBtn ? 'Find Similar' : 'Search'}
+                `;
+            }
+        }
+
+        // Render search results as thumbnail grid
+        function renderResults(results) {
+            currentResults = results;
+            resultsGrid.innerHTML = '';
+
+            if (results.length === 0) {
+                showNoResults();
+                return;
+            }
+
+            hideNoResults();
+
+            results.forEach(function (photo, index) {
+                const card = document.createElement('div');
+                card.className = 'group cursor-pointer rounded-lg overflow-hidden shadow-sm border border-gray-200 bg-white hover:shadow-md transition-shadow';
+                card.setAttribute('role', 'button');
+                card.setAttribute('tabindex', '0');
+                card.setAttribute('aria-label', 'View ' + photo.filename);
+
+                card.innerHTML = `
+                    <div class="aspect-square bg-gray-100 overflow-hidden">
+                        <img
+                            src="${photo.thumbnailUrl}"
+                            alt="${photo.filename}"
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                            loading="lazy"
+                        />
+                    </div>
+                    <div class="p-3">
+                        <p class="text-sm font-medium text-gray-900 truncate" title="${photo.filename}">${photo.filename}</p>
+                        <p class="text-xs text-gray-500 mt-1">${formatFileSize(photo.fileSize)}</p>
+                        <p class="text-xs text-indigo-600 mt-1">Relevance: ${(photo.similarityScore * 100).toFixed(1)}%</p>
+                    </div>
+                `;
+
+                // Click handler to open overlay
+                card.addEventListener('click', function () {
+                    openOverlay(photo);
+                });
+
+                // Keyboard accessibility
+                card.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openOverlay(photo);
+                    }
+                });
+
+                resultsGrid.appendChild(card);
+            });
+        }
+
+        // Photo overlay
+        function openOverlay(photo) {
+            // Set full-size photo URL via the /photos/{id} endpoint (returns 302 redirect)
+            overlayPhoto.src = API_BASE_URL + '/photos/' + photo.photoId;
+            overlayPhoto.alt = photo.filename;
+
+            // Set metadata
+            overlayFilename.textContent = photo.filename;
+            overlayUploadDate.textContent = formatDate(photo.uploadedAt);
+            overlayFileSize.textContent = formatFileSize(photo.fileSize);
+            overlayContentType.textContent = photo.contentType;
+
+            // Show overlay
+            photoOverlay.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+
+            // Focus the close button for accessibility
+            overlayCloseButton.focus();
+        }
+
+        function closeOverlay() {
+            photoOverlay.classList.add('hidden');
+            document.body.style.overflow = '';
+            overlayPhoto.src = '';
+        }
+
+        // Search API call
+        async function performSearch(query) {
+            hideError();
+            hideNoResults();
+            setLoading(true);
+
+            try {
+                const response = await fetch(API_BASE_URL + '/photos/search?q=' + encodeURIComponent(query));
+
+                if (!response.ok) {
+                    let errorMsg = 'Search could not be completed. Please try again.';
+                    try {
+                        const errorData = await response.json();
+                        if (errorData.error) {
+                            errorMsg = errorData.error;
+                        }
+                    } catch (e) {
+                        // Use default error message
+                    }
+                    showError(errorMsg);
+                    return;
+                }
+
+                const data = await response.json();
+
+                // Results are already ordered by similarity score from the API,
+                // but ensure descending order on the client side as well
+                const sortedResults = (data.results || []).sort(function (a, b) {
+                    return b.similarityScore - a.similarityScore;
+                });
+
+                renderResults(sortedResults);
+            } catch (err) {
+                showError('Search could not be completed. Please check your connection and try again.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Event listeners
+
+        // Mode toggle
+        var modeTextBtn = document.getElementById('mode-text');
+        var modeImageBtn = document.getElementById('mode-image');
+        var imageSearchForm = document.getElementById('image-search-form');
+        var imageSearchInput = document.getElementById('image-search-input');
+        var imageSearchButton = document.getElementById('image-search-button');
+
+        modeTextBtn.addEventListener('click', function () {
+            modeTextBtn.className = 'px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white';
+            modeImageBtn.className = 'px-4 py-2 text-sm font-medium rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300';
+            searchForm.classList.remove('hidden');
+            imageSearchForm.classList.add('hidden');
+            hideError();
+        });
+
+        modeImageBtn.addEventListener('click', function () {
+            modeImageBtn.className = 'px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white';
+            modeTextBtn.className = 'px-4 py-2 text-sm font-medium rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300';
+            imageSearchForm.classList.remove('hidden');
+            searchForm.classList.add('hidden');
+            hideError();
+        });
+
+        // Image search file selection
+        imageSearchInput.addEventListener('change', function () {
+            imageSearchButton.disabled = !imageSearchInput.files.length;
+        });
+
+        // Image search form submission
+        imageSearchForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            hideError();
+            hideNoResults();
+
+            var file = imageSearchInput.files[0];
+            if (!file) {
+                showError('Please select an image to search with.');
+                return;
+            }
+
+            setLoading(true, imageSearchButton);
+
+            try {
+                var formData = new FormData();
+                formData.append('file', file);
+
+                var response = await fetch(API_BASE_URL + '/photos/search-by-image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    var errorMsg = 'Image search could not be completed. Please try again.';
+                    try {
+                        var errorData = await response.json();
+                        if (errorData.error) errorMsg = errorData.error;
+                    } catch (e) {}
+                    showError(errorMsg);
+                    return;
+                }
+
+                var data = await response.json();
+                var sortedResults = (data.results || []).sort(function (a, b) {
+                    return b.similarityScore - a.similarityScore;
+                });
+                renderResults(sortedResults);
+            } catch (err) {
+                showError('Image search could not be completed. Please check your connection and try again.');
+            } finally {
+                setLoading(false, imageSearchButton);
+            }
+        });
+
+        // Form submission
+        searchForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            hideError();
+
+            const query = searchInput.value.trim();
+
+            // Validate non-empty
+            if (!query) {
+                showError('Please enter a search term.');
+                searchInput.focus();
+                return;
+            }
+
+            performSearch(query);
+        });
+
+        // Overlay close handlers
+        overlayCloseButton.addEventListener('click', closeOverlay);
+        overlayBackdrop.addEventListener('click', closeOverlay);
+
+        // Close overlay with Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !photoOverlay.classList.contains('hidden')) {
+                closeOverlay();
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

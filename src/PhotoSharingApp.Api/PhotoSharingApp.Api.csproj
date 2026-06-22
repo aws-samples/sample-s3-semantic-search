@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AWSProjectType>Lambda</AWSProjectType>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <PublishReadyToRun>false</PublishReadyToRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="1.*" />
+    <PackageReference Include="AWSSDK.S3" Version="4.*" />
+    <PackageReference Include="AWSSDK.BedrockRuntime" Version="4.*" />
+    <PackageReference Include="AWSSDK.S3Vectors" Version="4.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PhotoSharingApp.ServiceDefaults\PhotoSharingApp.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>

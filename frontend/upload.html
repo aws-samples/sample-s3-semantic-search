@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload - SnapFind</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200" aria-label="Main navigation">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="upload.html" class="text-xl font-bold text-indigo-600">SnapFind</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="upload.html"
+                       class="px-3 py-2 rounded-md text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200"
+                       aria-current="page">
+                        Upload
+                    </a>
+                    <a href="search.html"
+                       class="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">
+                        Search
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex items-start justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="w-full max-w-lg">
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <h1 class="text-2xl font-semibold text-gray-900 mb-6 text-center">Upload a Photo</h1>
+
+                <!-- File Input -->
+                <div class="mb-6">
+                    <label for="file-input" class="block text-sm font-medium text-gray-700 mb-2">
+                        Select images (JPEG, PNG, or WebP, max 25 MB each, up to 10 photos)
+                    </label>
+                    <input
+                        type="file"
+                        id="file-input"
+                        accept="image/jpeg,image/png,image/webp"
+                        multiple
+                        class="block w-full text-sm text-gray-500
+                               file:mr-4 file:py-2 file:px-4
+                               file:rounded-md file:border-0
+                               file:text-sm file:font-medium
+                               file:bg-indigo-50 file:text-indigo-700
+                               hover:file:bg-indigo-100
+                               cursor-pointer"
+                        aria-describedby="file-help"
+                    />
+                    <p id="file-help" class="mt-1 text-xs text-gray-500">
+                        Accepted formats: JPEG, PNG, WebP. Max 25 MB per file. Up to 10 photos at once.
+                    </p>
+                </div>
+
+                <!-- Image Preview -->
+                <div id="preview-container" class="mb-6 hidden" aria-live="polite">
+                    <p class="text-sm font-medium text-gray-700 mb-2">Preview</p>
+                    <div id="preview-grid" class="grid grid-cols-5 gap-2 border border-gray-200 rounded-lg p-2 bg-gray-100">
+                    </div>
+                </div>
+
+                <!-- Upload Button -->
+                <div class="mb-6">
+                    <button
+                        id="upload-button"
+                        type="button"
+                        disabled
+                        class="w-full py-2.5 px-4 rounded-md text-sm font-medium text-white
+                               bg-indigo-600 hover:bg-indigo-700
+                               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
+                               disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300
+                               transition-colors"
+                        aria-label="Upload selected photo"
+                    >
+                        Upload
+                    </button>
+                </div>
+
+                <!-- Status Display -->
+                <div id="status-display" class="hidden" role="status" aria-live="polite">
+                    <div id="status-message" class="rounded-md p-4 text-sm"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="env-config.js"></script>
+    <script src="config.js"></script>
+    <script>
+    (function () {
+        'use strict';
+
+        // Configuration
+        const API_BASE_URL = window.__API_BASE_URL__ || '';
+        const MAX_FILE_SIZE = 26214400; // 25 MB in bytes
+        const MAX_FILES = 10;
+        const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
+        const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+        // DOM elements
+        const fileInput = document.getElementById('file-input');
+        const previewContainer = document.getElementById('preview-container');
+        const uploadButton = document.getElementById('upload-button');
+        const statusDisplay = document.getElementById('status-display');
+        const statusMessage = document.getElementById('status-message');
+
+        // State
+        let selectedFile = null;
+
+        // --- Validation ---
+
+        function getFileExtension(filename) {
+            const lastDot = filename.lastIndexOf('.');
+            if (lastDot === -1) return '';
+            return filename.slice(lastDot).toLowerCase();
+        }
+
+        function validateFormat(file) {
+            const extension = getFileExtension(file.name);
+            if (!ALLOWED_EXTENSIONS.includes(extension)) {
+                return { valid: false, error: 'Please select a JPEG, PNG, or WebP image.' };
+            }
+            if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+                return { valid: false, error: 'Please select a JPEG, PNG, or WebP image.' };
+            }
+            return { valid: true, error: null };
+        }
+
+        function validateSize(file) {
+            if (file.size > MAX_FILE_SIZE) {
+                return { valid: false, error: 'File exceeds the 25 MB limit. Please select a smaller image.' };
+            }
+            return { valid: true, error: null };
+        }
+
+        // --- UI Helpers ---
+
+        function showStatus(message, type) {
+            statusDisplay.classList.remove('hidden');
+            statusMessage.textContent = message;
+            statusMessage.className = 'rounded-md p-4 text-sm';
+            if (type === 'success') {
+                statusMessage.classList.add('bg-green-50', 'text-green-800', 'border', 'border-green-200');
+            } else if (type === 'error') {
+                statusMessage.classList.add('bg-red-50', 'text-red-800', 'border', 'border-red-200');
+            } else if (type === 'loading') {
+                statusMessage.classList.add('bg-blue-50', 'text-blue-800', 'border', 'border-blue-200');
+            }
+        }
+
+        function hideStatus() {
+            statusDisplay.classList.add('hidden');
+        }
+
+        function showPreview(files) {
+            const previewGrid = document.getElementById('preview-grid');
+            previewGrid.innerHTML = '';
+            Array.from(files).forEach(function (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = file.name;
+                    img.className = 'w-full h-20 object-cover rounded';
+                    previewGrid.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+            previewContainer.classList.remove('hidden');
+        }
+
+        function hidePreview() {
+            previewContainer.classList.add('hidden');
+            document.getElementById('preview-grid').innerHTML = '';
+        }
+
+        function setLoading(loading) {
+            if (loading) {
+                uploadButton.disabled = true;
+                uploadButton.textContent = 'Uploading…';
+                fileInput.disabled = true;
+                showStatus('Uploading your photo…', 'loading');
+            } else {
+                uploadButton.textContent = 'Upload';
+                fileInput.disabled = false;
+            }
+        }
+
+        function resetForm() {
+            selectedFile = null;
+            fileInput.value = '';
+            uploadButton.disabled = true;
+            hidePreview();
+        }
+
+        // --- Upload Logic ---
+
+        async function uploadFiles(files) {
+            const fileArray = Array.from(files);
+
+            // Step 1: Request presigned URLs from API
+            // Use batch format (files array) for all uploads (single or multiple)
+            const filesMetadata = fileArray.map(function (file) {
+                return {
+                    filename: file.name,
+                    contentType: file.type,
+                    fileSize: file.size
+                };
+            });
+
+            const initiateResponse = await fetch(API_BASE_URL + '/photos/initiate-upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ files: filesMetadata })
+            });
+
+            if (!initiateResponse.ok) {
+                const errorData = await initiateResponse.json().catch(function () { return {}; });
+                throw new Error(errorData.error || 'Failed to initiate upload. Please try again.');
+            }
+
+            const initiateData = await initiateResponse.json();
+            const uploads = initiateData.uploads;
+
+            if (!uploads || uploads.length === 0) {
+                throw new Error('Failed to get upload URLs. Please try again.');
+            }
+
+            // Step 2: PUT each file directly to S3 via presigned URL in parallel
+            const uploadPromises = fileArray.map(function (file, index) {
+                var uploadInfo = uploads[index];
+                return fetch(uploadInfo.uploadUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': file.type },
+                    body: file
+                }).then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('Upload failed for ' + file.name);
+                    }
+                    return response;
+                });
+            });
+
+            await Promise.all(uploadPromises);
+        }
+
+        // --- Event Handlers ---
+
+        fileInput.addEventListener('change', function () {
+            hideStatus();
+            const files = fileInput.files;
+
+            if (!files || files.length === 0) {
+                selectedFile = null;
+                uploadButton.disabled = true;
+                hidePreview();
+                return;
+            }
+
+            if (files.length > MAX_FILES) {
+                showStatus('Maximum 10 photos per upload.', 'error');
+                resetForm();
+                return;
+            }
+
+            // Validate all files
+            for (const file of files) {
+                const formatResult = validateFormat(file);
+                if (!formatResult.valid) {
+                    showStatus(formatResult.error, 'error');
+                    resetForm();
+                    return;
+                }
+
+                const sizeResult = validateSize(file);
+                if (!sizeResult.valid) {
+                    showStatus(sizeResult.error, 'error');
+                    resetForm();
+                    return;
+                }
+            }
+
+            // Show preview of all files
+            selectedFile = files;
+            uploadButton.disabled = false;
+            showPreview(files);
+            if (files.length > 1) {
+                showStatus(files.length + ' photos selected', 'loading');
+            }
+        });
+
+        uploadButton.addEventListener('click', async function () {
+            if (!selectedFile) return;
+
+            setLoading(true);
+
+            try {
+                await uploadFiles(selectedFile);
+                showStatus('Upload complete! Your photo will be searchable in a few seconds.', 'success');
+                resetForm();
+            } catch (err) {
+                showStatus(err.message || 'Upload failed. Please try again.', 'error');
+            } finally {
+                setLoading(false);
+                if (selectedFile) {
+                    uploadButton.disabled = false;
+                }
+            }
+        });
+
+        // Discard selected file on navigation away without error
+        window.addEventListener('beforeunload', function () {
+            selectedFile = null;
+        });
+    })();
+    </script>
+</body>
+</html>

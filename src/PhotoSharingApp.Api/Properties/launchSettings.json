@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "PhotoSharingApp.Api": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5050",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "PHOTOS_BUCKET_NAME": "",
+        "VECTOR_BUCKET_NAME": "photo-sharing-vectors"
+      }
+    }
+  }
+}
