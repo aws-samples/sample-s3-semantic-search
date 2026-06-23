@@ -8,14 +8,15 @@ public class Program
     {
         var app = new App();
 
-        new BackendStack(app, "PhotoSharingAppBackendStack", new StackProps
-        {
-            Description = "Photo Sharing App - Backend Infrastructure (S3, API Gateway, Lambda)"
-        });
-
-        new FrontendStack(app, "PhotoSharingAppFrontendStack", new StackProps
+        // Frontend first — BackendStack needs the CloudFront domain for CORS
+        var frontendStack = new FrontendStack(app, "PhotoSharingAppFrontendStack", new StackProps
         {
             Description = "Photo Sharing App - Frontend Hosting (S3, CloudFront)"
+        });
+
+        new BackendStack(app, "PhotoSharingAppBackendStack", frontendStack.DistributionDomainName, new StackProps
+        {
+            Description = "Photo Sharing App - Backend Infrastructure (S3, API Gateway, Lambda)"
         });
 
         app.Synth();

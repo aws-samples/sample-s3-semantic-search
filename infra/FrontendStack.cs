@@ -11,6 +11,12 @@ namespace PhotoSharingApp.Infra;
 /// </summary>
 public class FrontendStack : Stack
 {
+    /// <summary>
+    /// The CloudFront distribution domain name (e.g., d1234abcdef.cloudfront.net).
+    /// Used by BackendStack to configure CORS.
+    /// </summary>
+    public string DistributionDomainName { get; private set; }
+
     public FrontendStack(Construct scope, string id, IStackProps? props = null) : base(scope, id, props)
     {
         // S3 bucket for static website hosting (CloudFront uses OAI for access)
@@ -41,6 +47,9 @@ public class FrontendStack : Stack
                 }
             }
         });
+
+        // Expose distribution domain for cross-stack reference
+        DistributionDomainName = distribution.DistributionDomainName;
 
         // Stack outputs
         _ = new CfnOutput(this, "FrontendBucketName", new CfnOutputProps

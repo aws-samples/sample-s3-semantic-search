@@ -8,7 +8,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "PHOTOS_BUCKET_NAME": "",
-        "VECTOR_BUCKET_NAME": "photo-sharing-vectors"
+        "VECTOR_BUCKET_NAME": ""
       }
     }
   }

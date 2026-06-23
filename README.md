@@ -78,8 +78,8 @@ The upload and processing are fully decoupled. The client never waits for embedd
 ## Local Development
 
 ```bash
-# Install frontend dependencies (first time only)
-cd frontend && npm install && cd ..
+# Install frontend dependencies and build CSS (first time only)
+cd frontend && npm install && npm run build:css && cd ..
 
 # Run the app
 dotnet run --project src/PhotoSharingApp.AppHost
@@ -101,13 +101,13 @@ cd ..
 dotnet publish src/PhotoSharingApp.Api -c Release
 dotnet publish src/PhotoSharingApp.Processing -c Release
 
-# Deploy all CDK stacks
+# Deploy all CDK stacks (CORS is automatically configured using the CloudFront domain)
 cd infra
 cdk deploy --all --require-approval never
 cd ..
 
-# Install frontend dependencies and update config.js with the API URL from CDK output
-cd frontend && npm install && cd ..
+# Install frontend dependencies, build CSS, and update config.js with the API URL from CDK output
+cd frontend && npm install && npm run build:css && cd ..
 # Edit frontend/config.js — replace the apiBaseUrl with your API Gateway URL
 
 # Sync frontend to S3
@@ -202,15 +202,12 @@ The check is a single `GetVectors` call (fast, cheap) and happens before any exp
 
 - **No authentication** — Open access, no rate limiting
 - **No thumbnails** — Full-size images served via presigned URLs
-- **Open CORS** — S3 bucket allows PUT from any origin
 - **Single-region** — Targets `us-east-1`
 - **Eventual consistency** — Photos become searchable ~5-10 seconds after upload (async processing)
 
 ## Production Recommendations
 
 - Add **authentication** (Cognito / JWT authorizer)
-- Tighten **CORS** to specific CloudFront distribution origin
-- Tighten **IAM policies** to specific resource ARNs
 - Generate **thumbnails** for search results
 - Add **content moderation** (Rekognition) and rate limiting
 - Add **DLQ alarm** (CloudWatch) to alert on processing failures

@@ -49,12 +49,13 @@ builder.Services.AddSingleton<IVectorStore>(sp =>
     return new S3VectorStore(s3v, vectorBucket);
 });
 
-// CORS for the static frontend
+// CORS for the static frontend - restrict to the CloudFront distribution origin
+var allowedOrigin = Environment.GetEnvironmentVariable("ALLOWED_ORIGIN") ?? "http://localhost:5050";
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins(allowedOrigin)
               .AllowAnyMethod()
               .AllowAnyHeader();
     });

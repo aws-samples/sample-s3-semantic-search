@@ -17,8 +17,11 @@ namespace PhotoSharingApp.Infra;
 /// </summary>
 public class BackendStack : Stack
 {
-    public BackendStack(Construct scope, string id, IStackProps? props = null) : base(scope, id, props)
+    public BackendStack(Construct scope, string id, string cloudFrontDomain, IStackProps? props = null) : base(scope, id, props)
     {
+        // Allowed origin for CORS - derived from the CloudFront distribution domain
+        var allowedOrigin = $"https://{cloudFrontDomain}";
+
         // S3 bucket for photo storage
         var photosBucket = new Bucket(this, "PhotosBucket", new BucketProps
         {
@@ -29,22 +32,25 @@ public class BackendStack : Stack
             Cors = new[] { new CorsRule
             {
                 AllowedMethods = new[] { HttpMethods.PUT },
-                AllowedOrigins = new[] { "*" },
+                AllowedOrigins = new[] { allowedOrigin },
                 AllowedHeaders = new[] { "Content-Type" },
                 ExposedHeaders = new[] { "ETag" }
             }}
         });
 
         // S3 Vector Bucket for metadata and embeddings
+        // Use account-specific name to prevent bucket squatting
+        var vectorBucketName = $"photo-sharing-vectors-{this.Account}-{this.Region}";
+
         var vectorBucket = new CfnVectorBucket(this, "VectorBucket", new CfnVectorBucketProps
         {
-            VectorBucketName = "photo-sharing-vectors"
+            VectorBucketName = vectorBucketName
         });
 
         // Vector Index for photo embeddings (1024 dimensions, cosine distance)
         var vectorIndex = new CfnIndex(this, "PhotoEmbeddingsIndex", new CfnIndexProps
         {
-            VectorBucketName = "photo-sharing-vectors",
+            VectorBucketName = vectorBucketName,
             IndexName = "photo-embeddings",
             Dimension = 1024,
             DistanceMetric = "cosine",
@@ -64,9 +70,10 @@ public class BackendStack : Stack
             Environment = new Dictionary<string, string>
             {
                 ["PHOTOS_BUCKET_NAME"] = photosBucket.BucketName,
-                ["VECTOR_BUCKET_NAME"] = "photo-sharing-vectors",
+                ["VECTOR_BUCKET_NAME"] = vectorBucketName,
                 ["VECTOR_INDEX_NAME"] = "photo-embeddings",
                 ["BEDROCK_MODEL_ID"] = "amazon.nova-2-multimodal-embeddings-v1:0",
+                ["ALLOWED_ORIGIN"] = allowedOrigin,
                 // OpenTelemetry collector layer (ADOT) reads these
                 ["OTEL_SERVICE_NAME"] = "snapfind-api",
                 ["OTEL_RESOURCE_ATTRIBUTES"] = "service.namespace=SnapFind"
@@ -82,14 +89,14 @@ public class BackendStack : Stack
         {
             Effect = Effect.ALLOW,
             Actions = new[] { "bedrock:InvokeModel" },
-            Resources = new[] { "*" }
+            Resources = new[] { $"arn:aws:bedrock:{this.Region}::foundation-model/amazon.nova-2-multimodal-embeddings-v1:0" }
         }));
 
         apiFunction.AddToRolePolicy(new PolicyStatement(new PolicyStatementProps
         {
             Effect = Effect.ALLOW,
             Actions = new[] { "s3vectors:PutVectors", "s3vectors:QueryVectors", "s3vectors:GetVectors" },
-            Resources = new[] { "*" }
+            Resources = new[] { $"arn:aws:s3vectors:{this.Region}:{this.Account}:vector-bucket/{vectorBucket.VectorBucketName}" }
         }));
 
         // Lambda integration
@@ -102,7 +109,7 @@ public class BackendStack : Stack
             Description = "SnapFind HTTP API",
             CorsPreflight = new CorsPreflightOptions
             {
-                AllowOrigins = new[] { "*" },
+                AllowOrigins = new[] { allowedOrigin },
                 AllowMethods = new[] { CorsHttpMethod.GET, CorsHttpMethod.POST, CorsHttpMethod.OPTIONS },
                 AllowHeaders = new[] { "Content-Type", "Authorization" }
             }
@@ -136,7 +143,7 @@ public class BackendStack : Stack
             Environment = new Dictionary<string, string>
             {
                 ["PHOTOS_BUCKET_NAME"] = photosBucket.BucketName,
-                ["VECTOR_BUCKET_NAME"] = "photo-sharing-vectors",
+                ["VECTOR_BUCKET_NAME"] = vectorBucketName,
                 ["VECTOR_INDEX_NAME"] = "photo-embeddings",
                 ["BEDROCK_MODEL_ID"] = "amazon.nova-2-multimodal-embeddings-v1:0"
             },
@@ -150,14 +157,14 @@ public class BackendStack : Stack
         {
             Effect = Effect.ALLOW,
             Actions = new[] { "bedrock:InvokeModel" },
-            Resources = new[] { "*" }
+            Resources = new[] { $"arn:aws:bedrock:{this.Region}::foundation-model/amazon.nova-2-multimodal-embeddings-v1:0" }
         }));
 
         processingFunction.AddToRolePolicy(new PolicyStatement(new PolicyStatementProps
         {
             Effect = Effect.ALLOW,
             Actions = new[] { "s3vectors:PutVectors", "s3vectors:GetVectors" },
-            Resources = new[] { "*" }
+            Resources = new[] { $"arn:aws:s3vectors:{this.Region}:{this.Account}:vector-bucket/{vectorBucket.VectorBucketName}" }
         }));
 
         // S3 event notification: trigger Processing Lambda on ObjectCreated in photos/ prefix
@@ -182,7 +189,7 @@ public class BackendStack : Stack
 
         new CfnOutput(this, "VectorBucketName", new CfnOutputProps
         {
-            Value = "photo-sharing-vectors",
+            Value = vectorBucketName,
             Description = "S3 Vector Bucket name for embeddings"
         });
     }

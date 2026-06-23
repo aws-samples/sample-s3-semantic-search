@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SnapFind - Search</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body class="min-h-screen bg-gray-50 flex flex-col">
     <!-- Navigation Bar -->
@@ -274,21 +274,39 @@
                 card.setAttribute('tabindex', '0');
                 card.setAttribute('aria-label', 'View ' + photo.filename);
 
-                card.innerHTML = `
-                    <div class="aspect-square bg-gray-100 overflow-hidden">
-                        <img
-                            src="${photo.thumbnailUrl}"
-                            alt="${photo.filename}"
-                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                            loading="lazy"
-                        />
-                    </div>
-                    <div class="p-3">
-                        <p class="text-sm font-medium text-gray-900 truncate" title="${photo.filename}">${photo.filename}</p>
-                        <p class="text-xs text-gray-500 mt-1">${formatFileSize(photo.fileSize)}</p>
-                        <p class="text-xs text-indigo-600 mt-1">Relevance: ${(photo.similarityScore * 100).toFixed(1)}%</p>
-                    </div>
-                `;
+                // Build card content using safe DOM methods to prevent XSS
+                const imageWrapper = document.createElement('div');
+                imageWrapper.className = 'aspect-square bg-gray-100 overflow-hidden';
+
+                const img = document.createElement('img');
+                img.src = photo.thumbnailUrl;
+                img.alt = photo.filename;
+                img.className = 'w-full h-full object-cover group-hover:scale-105 transition-transform duration-200';
+                img.loading = 'lazy';
+                imageWrapper.appendChild(img);
+
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'p-3';
+
+                const fileNameP = document.createElement('p');
+                fileNameP.className = 'text-sm font-medium text-gray-900 truncate';
+                fileNameP.title = photo.filename;
+                fileNameP.textContent = photo.filename;
+
+                const fileSizeP = document.createElement('p');
+                fileSizeP.className = 'text-xs text-gray-500 mt-1';
+                fileSizeP.textContent = formatFileSize(photo.fileSize);
+
+                const relevanceP = document.createElement('p');
+                relevanceP.className = 'text-xs text-indigo-600 mt-1';
+                relevanceP.textContent = 'Relevance: ' + (photo.similarityScore * 100).toFixed(1) + '%';
+
+                infoDiv.appendChild(fileNameP);
+                infoDiv.appendChild(fileSizeP);
+                infoDiv.appendChild(relevanceP);
+
+                card.appendChild(imageWrapper);
+                card.appendChild(infoDiv);
 
                 // Click handler to open overlay
                 card.addEventListener('click', function () {
