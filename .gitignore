@@ -37,6 +37,3 @@ node_modules/
 # Frontend (npm + dynamic config)
 frontend/node_modules/
 frontend/env-config.js
-
-# Local development settings (contains account-specific values)
-**/appsettings.Development.json

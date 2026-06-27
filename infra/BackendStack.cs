@@ -29,13 +29,21 @@ public class BackendStack : Stack
             AutoDeleteObjects = true,
             BlockPublicAccess = BlockPublicAccess.BLOCK_ALL,
             Encryption = BucketEncryption.S3_MANAGED,
-            Cors = new[] { new CorsRule
-            {
-                AllowedMethods = new[] { HttpMethods.PUT },
-                AllowedOrigins = new[] { allowedOrigin },
-                AllowedHeaders = new[] { "Content-Type" },
-                ExposedHeaders = new[] { "ETag" }
-            }}
+            Cors = new[] {
+                new CorsRule
+                {
+                    AllowedMethods = new[] { HttpMethods.PUT },
+                    AllowedOrigins = new[] { allowedOrigin, "http://localhost:3000" },
+                    AllowedHeaders = new[] { "Content-Type" },
+                    ExposedHeaders = new[] { "ETag" }
+                },
+                new CorsRule
+                {
+                    AllowedMethods = new[] { HttpMethods.GET },
+                    AllowedOrigins = new[] { allowedOrigin, "http://localhost:3000" },
+                    AllowedHeaders = new[] { "*" }
+                }
+            }
         });
 
         // S3 Vector Bucket for metadata and embeddings
@@ -98,8 +106,8 @@ public class BackendStack : Stack
             Actions = new[] { "s3vectors:PutVectors", "s3vectors:QueryVectors", "s3vectors:GetVectors" },
             Resources = new[]
             {
-                $"arn:aws:s3vectors:{this.Region}:{this.Account}:vector-bucket/{vectorBucket.VectorBucketName}",
-                $"arn:aws:s3vectors:{this.Region}:{this.Account}:vector-bucket/{vectorBucket.VectorBucketName}/*"
+                $"arn:aws:s3vectors:{this.Region}:{this.Account}:bucket/{vectorBucket.VectorBucketName}",
+                $"arn:aws:s3vectors:{this.Region}:{this.Account}:bucket/{vectorBucket.VectorBucketName}/*"
             }
         }));
 
@@ -170,8 +178,8 @@ public class BackendStack : Stack
             Actions = new[] { "s3vectors:PutVectors", "s3vectors:GetVectors" },
             Resources = new[]
             {
-                $"arn:aws:s3vectors:{this.Region}:{this.Account}:vector-bucket/{vectorBucket.VectorBucketName}",
-                $"arn:aws:s3vectors:{this.Region}:{this.Account}:vector-bucket/{vectorBucket.VectorBucketName}/*"
+                $"arn:aws:s3vectors:{this.Region}:{this.Account}:bucket/{vectorBucket.VectorBucketName}",
+                $"arn:aws:s3vectors:{this.Region}:{this.Account}:bucket/{vectorBucket.VectorBucketName}/*"
             }
         }));
 
