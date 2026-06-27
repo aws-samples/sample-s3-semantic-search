@@ -96,7 +96,11 @@ public class BackendStack : Stack
         {
             Effect = Effect.ALLOW,
             Actions = new[] { "s3vectors:PutVectors", "s3vectors:QueryVectors", "s3vectors:GetVectors" },
-            Resources = new[] { $"arn:aws:s3vectors:{this.Region}:{this.Account}:vector-bucket/{vectorBucket.VectorBucketName}" }
+            Resources = new[]
+            {
+                $"arn:aws:s3vectors:{this.Region}:{this.Account}:vector-bucket/{vectorBucket.VectorBucketName}",
+                $"arn:aws:s3vectors:{this.Region}:{this.Account}:vector-bucket/{vectorBucket.VectorBucketName}/*"
+            }
         }));
 
         // Lambda integration
@@ -164,7 +168,11 @@ public class BackendStack : Stack
         {
             Effect = Effect.ALLOW,
             Actions = new[] { "s3vectors:PutVectors", "s3vectors:GetVectors" },
-            Resources = new[] { $"arn:aws:s3vectors:{this.Region}:{this.Account}:vector-bucket/{vectorBucket.VectorBucketName}" }
+            Resources = new[]
+            {
+                $"arn:aws:s3vectors:{this.Region}:{this.Account}:vector-bucket/{vectorBucket.VectorBucketName}",
+                $"arn:aws:s3vectors:{this.Region}:{this.Account}:vector-bucket/{vectorBucket.VectorBucketName}/*"
+            }
         }));
 
         // S3 event notification: trigger Processing Lambda on ObjectCreated in photos/ prefix

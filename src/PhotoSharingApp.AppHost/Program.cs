@@ -2,8 +2,11 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var api = builder.AddProject<Projects.PhotoSharingApp_Api>("api")
     .WithEnvironment("PHOTOS_BUCKET_NAME", builder.Configuration["AWS:PhotosBucketName"] ?? "")
-    .WithEnvironment("VECTOR_BUCKET_NAME", builder.Configuration["AWS:VectorBucketName"] ?? "photo-sharing-vectors")
+    .WithEnvironment("VECTOR_BUCKET_NAME", string.IsNullOrWhiteSpace(builder.Configuration["AWS:VectorBucketName"])
+        ? "photo-sharing-vectors"
+        : builder.Configuration["AWS:VectorBucketName"]!)
     .WithEnvironment("AWS_REGION", builder.Configuration["AWS:Region"] ?? "us-east-1")
+    .WithEnvironment("ALLOWED_ORIGIN", "http://localhost:3000")
     .WithExternalHttpEndpoints();
 
 // Write the API URL to frontend/env-config.js so the static site picks it up
